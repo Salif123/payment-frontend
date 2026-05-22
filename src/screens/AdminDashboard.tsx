@@ -14,6 +14,72 @@ import {
 import { API_URL } from '../config';
 import { Customer, Payment } from '../types';
 
+// Helper functions for safe formatting across platforms (Web & Mobile/Hermes)
+const safeFormatCurrency = (amount: any): string => {
+  if (amount === undefined || amount === null) return '0.00';
+  const num = parseFloat(amount.toString());
+  if (isNaN(num)) return '0.00';
+  try {
+    return num.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  } catch (e) {
+    return num.toFixed(2);
+  }
+};
+
+const safeFormatDate = (dateStr: string): string => {
+  if (!dateStr) return 'N/A';
+  try {
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const day = date.getDate();
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      return `${day} ${month} ${year}`;
+    }
+  } catch (e) {
+    console.error('Error parsing date:', e);
+  }
+
+  // Regex fallback parser for YYYY-MM-DD
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const year = match[1];
+    const monthIdx = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    if (monthIdx >= 0 && monthIdx < 12) {
+      return `${day} ${months[monthIdx]} ${year}`;
+    }
+  }
+  return dateStr;
+};
+
+const safeFormatDateTime = (dateStr: string): string => {
+  if (!dateStr) return 'N/A';
+  try {
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const day = date.getDate();
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      let hours = date.getHours();
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+    }
+  } catch (e) {
+    console.error('Error parsing datetime:', e);
+  }
+  return dateStr;
+};
+
 export default function AdminDashboard() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
@@ -109,11 +175,7 @@ export default function AdminDashboard() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    return safeFormatDate(dateStr);
   };
 
   return (
@@ -122,7 +184,7 @@ export default function AdminDashboard() {
       <View style={styles.metricsGrid}>
         <View style={[styles.metricCard, { backgroundColor: '#6366f1' }]}>
           <Text style={styles.metricLabel}>Total Portfolio Balance</Text>
-          <Text style={styles.metricVal}>₹{stats.totalOutstanding.toLocaleString('en-IN')}</Text>
+          <Text style={styles.metricVal}>₹{safeFormatCurrency(stats.totalOutstanding)}</Text>
         </View>
         <View style={styles.metricsHalfRow}>
           <View style={[styles.metricCardHalf, { backgroundColor: '#3b82f6' }]}>
@@ -178,8 +240,8 @@ export default function AdminDashboard() {
                   <Text style={styles.itemAccountNumber}>{item.account_number}</Text>
                 </View>
                 <View style={styles.itemRight}>
-                  <Text style={styles.itemBalance}>₹{item.remaining_balance}</Text>
-                  <Text style={styles.itemEmi}>EMI: ₹{item.emi_due}</Text>
+                  <Text style={styles.itemBalance}>₹{safeFormatCurrency(item.remaining_balance)}</Text>
+                  <Text style={styles.itemEmi}>EMI: ₹{safeFormatCurrency(item.emi_due)}</Text>
                 </View>
               </View>
               <View style={styles.itemFooter}>
@@ -256,7 +318,7 @@ export default function AdminDashboard() {
                       </View>
                       <View style={styles.infoItem}>
                         <Text style={styles.infoLabel}>Monthly EMI Due</Text>
-                        <Text style={styles.infoValue}>₹{selectedCustomer.emi_due}</Text>
+                        <Text style={styles.infoValue}>₹{safeFormatCurrency(selectedCustomer.emi_due)}</Text>
                       </View>
                     </View>
                   </View>
@@ -264,7 +326,7 @@ export default function AdminDashboard() {
                   <View style={styles.balanceHighlight}>
                     <View>
                       <Text style={styles.balanceHighlightLabel}>Remaining Outstanding</Text>
-                      <Text style={styles.balanceHighlightValue}>₹{selectedCustomer.remaining_balance}</Text>
+                      <Text style={styles.balanceHighlightValue}>₹{safeFormatCurrency(selectedCustomer.remaining_balance)}</Text>
                     </View>
                     <View
                       style={[
@@ -308,11 +370,11 @@ export default function AdminDashboard() {
                           <View>
                             <Text style={styles.historyTxn}>{p.transaction_id}</Text>
                             <Text style={styles.historyDate}>
-                              {new Date(p.payment_date).toLocaleString('en-IN')}
+                              {safeFormatDateTime(p.payment_date)}
                             </Text>
                           </View>
                           <View style={styles.historyRight}>
-                            <Text style={styles.historyAmount}>+ ₹{p.payment_amount}</Text>
+                            <Text style={styles.historyAmount}>+ ₹{safeFormatCurrency(p.payment_amount)}</Text>
                             <Text style={styles.historyStatus}>{p.status}</Text>
                           </View>
                         </View>

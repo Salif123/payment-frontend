@@ -13,6 +13,72 @@ import {
 import { API_URL } from '../config';
 import { Customer, Payment } from '../types';
 
+// Helper functions for safe formatting across platforms (Web & Mobile/Hermes)
+const safeFormatCurrency = (amount: any): string => {
+  if (amount === undefined || amount === null) return '0.00';
+  const num = parseFloat(amount.toString());
+  if (isNaN(num)) return '0.00';
+  try {
+    return num.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  } catch (e) {
+    return num.toFixed(2);
+  }
+};
+
+const safeFormatDate = (dateStr: string): string => {
+  if (!dateStr) return 'N/A';
+  try {
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const day = date.getDate();
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      return `${day} ${month} ${year}`;
+    }
+  } catch (e) {
+    console.error('Error parsing date:', e);
+  }
+
+  // Regex fallback parser for YYYY-MM-DD
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const year = match[1];
+    const monthIdx = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    if (monthIdx >= 0 && monthIdx < 12) {
+      return `${day} ${months[monthIdx]} ${year}`;
+    }
+  }
+  return dateStr;
+};
+
+const safeFormatDateTime = (dateStr: string): string => {
+  if (!dateStr) return 'N/A';
+  try {
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const day = date.getDate();
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      let hours = date.getHours();
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+    }
+  } catch (e) {
+    console.error('Error parsing datetime:', e);
+  }
+  return dateStr;
+};
+
 export default function CustomerPortal() {
   const [accountNumber, setAccountNumber] = useState('');
   const [loading, setLoading] = useState(false);
@@ -144,11 +210,7 @@ export default function CustomerPortal() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    return safeFormatDate(dateStr);
   };
 
   return (
@@ -218,7 +280,7 @@ export default function CustomerPortal() {
               </View>
               <View style={styles.gridItem}>
                 <Text style={styles.gridLabel}>EMI Due</Text>
-                <Text style={styles.gridValueHighlighted}>₹{customer.emi_due}</Text>
+                <Text style={styles.gridValueHighlighted}>₹{safeFormatCurrency(customer.emi_due)}</Text>
               </View>
             </View>
 
@@ -226,7 +288,7 @@ export default function CustomerPortal() {
 
             <View style={styles.balanceContainer}>
               <Text style={styles.balanceLabel}>Remaining Loan Balance</Text>
-              <Text style={styles.balanceValue}>₹{customer.remaining_balance}</Text>
+              <Text style={styles.balanceValue}>₹{safeFormatCurrency(customer.remaining_balance)}</Text>
             </View>
           </View>
 
@@ -266,10 +328,10 @@ export default function CustomerPortal() {
                 <View key={p.id} style={styles.paymentLogItem}>
                   <View>
                     <Text style={styles.logTxnId}>{p.transaction_id}</Text>
-                    <Text style={styles.logDate}>{new Date(p.payment_date).toLocaleString('en-IN')}</Text>
+                    <Text style={styles.logDate}>{safeFormatDateTime(p.payment_date)}</Text>
                   </View>
                   <View style={styles.logRight}>
-                    <Text style={styles.logAmount}>+ ₹{p.payment_amount}</Text>
+                    <Text style={styles.logAmount}>+ ₹{safeFormatCurrency(p.payment_amount)}</Text>
                     <View style={styles.successBadge}>
                       <Text style={styles.successBadgeText}>{p.status}</Text>
                     </View>
@@ -312,11 +374,11 @@ export default function CustomerPortal() {
                 </View>
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Amount Paid</Text>
-                  <Text style={styles.receiptValAmount}>₹{receipt.payment_amount}</Text>
+                  <Text style={styles.receiptValAmount}>₹{safeFormatCurrency(receipt.payment_amount)}</Text>
                 </View>
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Remaining Balance</Text>
-                  <Text style={styles.receiptVal}>₹{receipt.remaining_balance}</Text>
+                  <Text style={styles.receiptVal}>₹{safeFormatCurrency(receipt.remaining_balance)}</Text>
                 </View>
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Status</Text>
