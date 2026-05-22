@@ -1,49 +1,85 @@
-# EMI Calculator Backend Implementation Plan
+# Payment Collection Client (EMI Calculator App)
 
-This plan outlines the architecture, database schema, and logic for the EMI Calculator backend, focusing on a stack that is perfectly suited for an **AWS EC2 Free Tier (t2.micro / t3.micro)** deployment and easy CI/CD integration.
+This is the front-end client application for the **Payment Collection & EMI Management System**. It is built using **Expo (React Native & React Native Web)**, designed to adapt its user interface dynamically for web browsers, tablets, and native mobile screens.
 
-## Proposed Tech Stack
-- **Node.js with Express** and **TypeScript** (to match the frontend language). 
-- **Database**: **Prisma ORM with SQLite**. 
-*Why SQLite?* It is a lightweight, serverless database that stores data in a file. It consumes virtually zero RAM, making it perfect for an EC2 free tier instance where memory is limited (1GB). It doesn't require setting up a separate RDS database instance.
+---
 
-## Open Questions for You:
-1. **Interest Calculation**: You mentioned "interest are calculated stored". I will assume a **Flat Rate Interest** model where the total interest is calculated upfront. Example: Loan = ₹10,000, Interest = 10%. Total to be paid = ₹11,000. The balance starts at ₹11,000 and payments directly reduce this balance. Is this simple model correct, or do you need a reducing balance compounding interest formula?
-2. **Project Structure**: I will create the backend as a completely separate folder alongside the frontend (e.g., `d:\TEST\emi-calculator-backend`). Is this acceptable?
-3. **AWS Deployment**: Do you already have an AWS account with an EC2 instance running, or should I just provide the CI/CD scripts (like GitHub Actions) and deployment instructions for you to use later?
+## 🚀 Key Features
 
-## Proposed Changes
+* **Multi-Portal View**: Uses a clean, interactive top navigation bar to toggle between the **Customer Portal** and **Admin Dashboard**.
+* **Search & Lookup**: Instant customer search using the borrower's account number.
+* **Smart Payments**: Validates EMI payments against outstanding balances, automatically updating values and log history.
+* **Interactive Modals**: Detailed profiles and complete payment histories expand inside scroll-managed overlays.
+* **Hermes Compatibility**: Fully optimized for Android's Hermes engine using custom-built cross-platform date and currency formatters.
+* **Cleartext Traffic Support**: Configured to safely communicate with HTTP backend endpoints directly from native builds.
 
-### 1. Project Initialization
-- Create a new backend directory `emi-calculator-backend`.
-- Initialize Node.js, Express, TypeScript, and Prisma.
+---
 
-### 2. Database Schema (Prisma)
-- **`Borrower` Model**:
-  - `id`: UUID
-  - `name`: String
-  - `amountTaken`: Float (Principal)
-  - `fixedInterest`: Float (Percentage)
-  - `totalAmount`: Float (Principal + Calculated Interest)
-  - `balance`: Float (Remaining amount to be paid)
-  - `dueDate`: DateTime
-  - `penalty`: Float
-- **`Payment` Model**:
-  - `id`: UUID
-  - `borrowerId`: Relation to Borrower
-  - `amount`: Float
-  - `paymentDate`: DateTime
+## 📂 Project Structure
 
-### 3. API Endpoints
-- `GET /api/borrowers`: Fetch all borrowers.
-- `POST /api/borrowers`: Add a new borrower. (Will calculate `totalAmount` based on principal + interest).
-- `POST /api/borrowers/:id/payments`: Process a payment. 
-  - **Logic**: Deducts the paid amount from the borrower's `balance`. Handles partial, full, or over-payments. If balance hits `0` or less, the loan finishes early.
+* **`App.tsx`**: Main entry point handling navigation, screen layout, state management, and visual headers.
+* **`src/config.ts`**: Configures the REST API target. Automatically reads `EXPO_PUBLIC_API_URL` or defaults to the production EC2 URL (`http://44.213.113.209`).
+* **`src/screens/CustomerPortal.tsx`**: Customer interface containing the loan details card, payments form, live transaction receipt pop-up, and payment logs.
+* **`src/screens/AdminDashboard.tsx`**: Administrative control center listing active borrowers, showing portfolio-wide aggregated metrics, and managing the drill-down user inspect modal.
 
-### 4. Frontend Integration
-- Modify `HomeScreen.tsx` and `PlayerCard.tsx` to use `fetch` to retrieve the data from the backend instead of using the local mock data.
-- Update the `onPayEmi` function to call the `POST /payments` endpoint.
+---
 
-### 5. CI/CD & Deployment Setup
-- Create a `ecosystem.config.js` for PM2 (to keep the app running on EC2).
-- Create a sample GitHub Actions YAML workflow that SSHs into the EC2 instance, pulls the latest code, and restarts PM2.
+## ⚙️ Environment Configuration
+
+By default, the client is pre-configured to communicate with the live production API at `http://44.213.113.209`.
+
+To target a different server (such as a local database on your machine), create a `.env` file in the root of this folder:
+```env
+EXPO_PUBLIC_API_URL=http://localhost:3000
+```
+*Note: Expo automatically loads environment variables starting with `EXPO_PUBLIC_` at start/build time.*
+
+---
+
+## 🛠️ Commands & Running Guide
+
+### 1. Install Dependencies
+Restore package requirements using the legacy peer flags to ensure clean React 19 package installations:
+```bash
+npm install --legacy-peer-deps
+```
+
+### 2. Launch Client Web App
+To run and test the frontend client in your desktop web browser:
+```bash
+npm run web
+```
+This launches a local Metro server serving the web build, typically opening at `http://localhost:8081`.
+
+### 3. Run on Mobile (Expo Go)
+For live on-device testing and debugging:
+1. Start the Expo server:
+   ```bash
+   npm start
+   ```
+2. Scan the generated QR code:
+   * **Android**: Open the **Expo Go** app and use the scan tool.
+   * **iOS**: Scan the QR code using the default Camera app to open in Expo Go.
+
+### 4. Build Standalone Android APK (EAS Build)
+The application includes configuration via `app.json` and `eas.json` to compile into an Android `.apk` file for testing:
+1. Install EAS CLI:
+   ```bash
+   npm install -g eas-cli
+   ```
+2. Log into your Expo profile:
+   ```bash
+   eas login
+   ```
+3. Run the preview Android build:
+   ```bash
+   eas build -p android --profile preview
+   ```
+4. Scan the completed build's QR code on your Android device to download and run the APK.
+
+---
+
+## 🎨 Design and UI Customizations
+* **Icons**: Powered by `lucide-react-native` for modern, responsive vector art.
+* **Aesthetics**: Follows a cohesive color scheme of dark slates, emerald highlights, and crisp typography tailored for high-contrast viewing on both phone displays and monitors.
+* **Responsiveness**: Utilizes flex layouts and dynamic percentage heights based on the viewport (`Dimensions.get('window').height`) to prevent content compression on native screens.
