@@ -600,6 +600,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     width: '100%',
     maxWidth: 520,
+    height: Platform.OS === 'web' ? 'auto' : '80%',
     maxHeight: '90%',
     padding: 24,
     shadowColor: '#000',
@@ -643,6 +644,7 @@ const styles = StyleSheet.create({
   },
   modalScroll: {
     flex: 1,
+    width: '100%',
   },
   sectionTitle: {
     fontSize: 14,
