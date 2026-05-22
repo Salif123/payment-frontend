@@ -10,6 +10,7 @@ import {
   Modal,
   ScrollView,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { API_URL } from '../config';
 import { Customer, Payment } from '../types';
@@ -297,7 +298,11 @@ export default function AdminDashboard() {
                   </TouchableOpacity>
                 </View>
 
-                <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                <ScrollView 
+                  style={styles.modalScroll} 
+                  contentContainerStyle={styles.modalScrollContent}
+                  showsVerticalScrollIndicator={false}
+                >
                   {/* Detailed Information Grid */}
                   <Text style={styles.sectionTitle}>Loan Agreement Summary</Text>
                   <View style={styles.infoGrid}>
@@ -600,7 +605,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     width: '100%',
     maxWidth: 520,
-    height: Platform.OS === 'web' ? 'auto' : '80%',
+    height: Platform.OS === 'web' ? 'auto' : Dimensions.get('window').height * 0.75,
     maxHeight: '90%',
     padding: 24,
     shadowColor: '#000',
@@ -645,6 +650,10 @@ const styles = StyleSheet.create({
   modalScroll: {
     flex: 1,
     width: '100%',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
   },
   sectionTitle: {
     fontSize: 14,
